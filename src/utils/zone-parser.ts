@@ -13,7 +13,7 @@ export function parseZoneFile(content: string, origin: string): DnsRecord[] {
 
   const lines = content.split('\n');
   for (const raw of lines) {
-    const line = raw.replace(/;.*$/, '').trim();
+    const line = stripZoneComment(raw).trim();
     if (!line) continue;
 
     // $TTL directive
@@ -95,4 +95,16 @@ function isClass(token: string): boolean {
 
 function isType(token: string): boolean {
   return VALID_TYPES.has(token.toUpperCase());
+}
+
+export function stripZoneComment(line: string): string {
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '"') {
+      inQuote = !inQuote;
+    } else if (line[i] === ';' && !inQuote) {
+      return line.slice(0, i);
+    }
+  }
+  return line;
 }

@@ -42,13 +42,19 @@ export async function listGrants(): Promise<TsigGrant[]> {
     'utf-8'
   );
   const grants: TsigGrant[] = [];
-  // Match zone blocks and extract grants
-  const zoneRe = /zone\s+"([^"]+)"\s+IN\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/gs;
+  // Parse zone blocks — template produces `zone "name" {` (no IN)
+  const zoneRe = /zone\s+"([^"]+)"\s*\{/g;
   let zoneMatch;
   while ((zoneMatch = zoneRe.exec(content)) !== null) {
     const zone = zoneMatch[1];
-    const body = zoneMatch[2];
-    const grantRe = /grant\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/g;
+    // Extract the zone block body by counting braces from the opening {
+    const start = zoneMatch.index + zoneMatch[0].length;
+    const body = extractBlock(content, start);
+
+    // Parse grants — key names may be quoted, record types can be multi-word
+    // Format: grant "keyname" matchType target recordTypes;
+    // Or:     grant keyname matchType target recordTypes;
+    const grantRe = /grant\s+"?([^"\s]+)"?\s+(\S+)\s+(\S+)\s+([^;]+);/g;
     let grantMatch;
     while ((grantMatch = grantRe.exec(body)) !== null) {
       grants.push({
@@ -56,7 +62,7 @@ export async function listGrants(): Promise<TsigGrant[]> {
         zone,
         matchType: grantMatch[2],
         name: grantMatch[3],
-        recordTypes: grantMatch[4],
+        recordTypes: grantMatch[4].trim(),
       });
     }
   }
@@ -80,21 +86,27 @@ export async function addKey(
   keysContent = keysContent.trimEnd() + '\n' + keyBlock;
   await fs.writeFile(keysPath, keysContent);
 
-  // Add grant lines to named.conf.zones
+  // Add grant lines to named.conf.zones using the marker comment
   if (zones.length > 0) {
     const zonesPath = path.join(config.bind9.configDir, 'named.conf.zones');
     let zonesContent = await fs.readFile(zonesPath, 'utf-8');
 
     for (const zone of zones) {
       const target = grantName || `${zone}.`;
-      const grantLine = `        grant ${name} ${matchType} ${target} ${recordTypes};`;
-      // Insert grant before the closing of update-policy block for the zone
-      const policyEndRe = new RegExp(
-        `(zone\\s+"${escapeRegex(zone)}"\\s+IN\\s*\\{[^}]*update-policy\\s*\\{[^}]*)` +
-        `(\\s*\\};\\s*\\};)`,
-        's'
+      const grantLine = `        grant "${name}" ${matchType} ${target} ${recordTypes};`;
+      // Insert after the "// --- additional keys ---" marker within the matching zone block
+      const markerRe = new RegExp(
+        `(zone\\s+"${escapeRegex(zone)}"\\s*\\{[\\s\\S]*?// --- additional keys ---[^\\n]*)`,
+        ''
       );
-      zonesContent = zonesContent.replace(policyEndRe, `$1\n${grantLine}$2`);
+      const markerMatch = zonesContent.match(markerRe);
+      if (markerMatch) {
+        const insertPos = markerMatch.index! + markerMatch[0].length;
+        zonesContent =
+          zonesContent.slice(0, insertPos) +
+          '\n' + grantLine +
+          zonesContent.slice(insertPos);
+      }
     }
     await fs.writeFile(zonesPath, zonesContent);
   }
@@ -113,11 +125,11 @@ export async function removeKey(name: string): Promise<void> {
   );
   await fs.writeFile(keysPath, keysContent);
 
-  // Remove all grant lines referencing this key from named.conf.zones
+  // Remove all grant lines referencing this key (quoted or unquoted) from named.conf.zones
   const zonesPath = path.join(config.bind9.configDir, 'named.conf.zones');
   let zonesContent = await fs.readFile(zonesPath, 'utf-8');
   zonesContent = zonesContent.replace(
-    new RegExp(`^\\s*grant\\s+${escapeRegex(name)}\\s+.*$\\n?`, 'gm'),
+    new RegExp(`^\\s*(?://[^\\n]*\\n)?\\s*grant\\s+"?${escapeRegex(name)}"?\\s+.*$\\n?`, 'gm'),
     ''
   );
   await fs.writeFile(zonesPath, zonesContent);
@@ -127,4 +139,15 @@ export async function removeKey(name: string): Promise<void> {
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractBlock(content: string, startAfterBrace: number): string {
+  let depth = 1;
+  let i = startAfterBrace;
+  while (i < content.length && depth > 0) {
+    if (content[i] === '{') depth++;
+    else if (content[i] === '}') depth--;
+    i++;
+  }
+  return content.slice(startAfterBrace, i - 1);
 }

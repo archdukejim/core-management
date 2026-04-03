@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { config } from '../config';
 import { rndcFreeze, rndcThaw } from '../utils/docker';
-import { DnsRecord, parseZoneFile } from '../utils/zone-parser';
+import { DnsRecord, parseZoneFile, stripZoneComment } from '../utils/zone-parser';
 
 export interface Zone {
   name: string;
@@ -15,7 +15,7 @@ export async function listZones(): Promise<Zone[]> {
     'utf-8'
   );
   const zones: Zone[] = [];
-  const re = /zone\s+"([^"]+)"\s+IN\s*\{[^}]*file\s+"([^"]+)"/g;
+  const re = /zone\s+"([^"]+)"\s*\{[^}]*file\s+"([^"]+)"/g;
   let match;
   while ((match = re.exec(zonesConf)) !== null) {
     zones.push({ name: match[1], file: match[2] });
@@ -55,8 +55,8 @@ export async function addRecord(
   try {
     let content = await fs.readFile(filePath, 'utf-8');
     content = incrementSerial(content);
-    const fqName = name.endsWith('.') ? name : name;
-    const record = `${fqName}\t${ttl}\tIN\t${type.toUpperCase()}\t${data}\n`;
+    const padded = name.padEnd(24);
+    const record = `${padded}${ttl}\tIN\t${type.toUpperCase()}\t${data}\n`;
     content = content.trimEnd() + '\n' + record;
     await fs.writeFile(filePath, content);
   } finally {
@@ -84,7 +84,7 @@ export async function deleteRecord(
 
     const lines = content.split('\n');
     const filtered = lines.filter((line) => {
-      const stripped = line.replace(/;.*$/, '').trim();
+      const stripped = stripZoneComment(line).trim();
       if (!stripped) return true;
       const normName = name === zone ? '@' : name;
       const hasName = stripped.startsWith(name) || stripped.startsWith(normName);
