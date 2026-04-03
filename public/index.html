@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Core Management</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Core Management</h1>
+    <nav>
+      <button class="tab active" data-panel="dns">DNS Records</button>
+      <button class="tab" data-panel="tsig">TSIG Keys</button>
+      <button class="tab" data-panel="certs">Certificates</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- DNS Records Panel -->
+    <section id="panel-dns" class="panel active">
+      <div class="panel-header">
+        <div class="zone-select">
+          <label for="zone-selector">Zone:</label>
+          <select id="zone-selector"></select>
+          <button id="btn-refresh-records" class="btn btn-secondary">Refresh</button>
+        </div>
+        <button id="btn-add-record" class="btn btn-primary">Add Record</button>
+      </div>
+      <table id="records-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>TTL</th>
+            <th>Type</th>
+            <th>Data</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="records-empty" class="empty-state" hidden>No records found.</p>
+    </section>
+
+    <!-- TSIG Keys Panel -->
+    <section id="panel-tsig" class="panel">
+      <div class="panel-header">
+        <h2>TSIG Keys</h2>
+        <button id="btn-add-tsig" class="btn btn-primary">Add Key</button>
+      </div>
+      <table id="tsig-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Algorithm</th>
+            <th>Secret</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <h3 style="margin-top:2rem;">Zone Grants</h3>
+      <table id="grants-table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Zone</th>
+            <th>Match Type</th>
+            <th>Name</th>
+            <th>Record Types</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Certificates Panel -->
+    <section id="panel-certs" class="panel">
+      <div class="panel-header">
+        <h2>Certificate Minting</h2>
+      </div>
+      <div class="card">
+        <h3>Mint a New Certificate</h3>
+        <form id="mint-form">
+          <div class="form-group">
+            <label for="cert-cn">Common Name</label>
+            <input type="text" id="cert-cn" placeholder="e.g. app.home" required>
+          </div>
+          <div class="form-group">
+            <label for="cert-sans">Subject Alternative Names <span class="hint">(comma-separated, optional)</span></label>
+            <input type="text" id="cert-sans" placeholder="e.g. app.home, *.app.home, 10.0.0.5">
+          </div>
+          <div class="form-group">
+            <label for="cert-duration">Duration</label>
+            <input type="text" id="cert-duration" value="8760h" placeholder="e.g. 8760h (1 year)">
+          </div>
+          <div class="form-row">
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" id="cert-is-ca">
+                Intermediate CA
+              </label>
+            </div>
+            <div class="form-group" id="pathlen-group" hidden>
+              <label for="cert-pathlen">Path Length</label>
+              <input type="number" id="cert-pathlen" value="0" min="0" max="10">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Mint Certificate</button>
+        </form>
+      </div>
+
+      <div id="cert-result" class="card" hidden>
+        <h3>Minted Certificate</h3>
+        <div class="cert-field">
+          <label>Common Name</label>
+          <code id="result-cn"></code>
+        </div>
+        <div class="cert-field">
+          <label>Certificate (PEM)</label>
+          <textarea id="result-cert" readonly rows="8"></textarea>
+          <button class="btn btn-secondary btn-sm" data-copy="result-cert">Copy</button>
+        </div>
+        <div class="cert-field">
+          <label>Private Key (PEM)</label>
+          <textarea id="result-key" readonly rows="8"></textarea>
+          <button class="btn btn-secondary btn-sm" data-copy="result-key">Copy</button>
+        </div>
+        <div class="cert-field">
+          <label>Full Chain (PEM)</label>
+          <textarea id="result-chain" readonly rows="8"></textarea>
+          <button class="btn btn-secondary btn-sm" data-copy="result-chain">Copy</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1.5rem;">
+        <h3>CA Certificates</h3>
+        <button id="btn-show-ca" class="btn btn-secondary">Show CA Certs</button>
+        <div id="ca-certs" hidden>
+          <div class="cert-field">
+            <label>Root CA</label>
+            <textarea id="ca-root" readonly rows="6"></textarea>
+          </div>
+          <div class="cert-field">
+            <label>Intermediate CA</label>
+            <textarea id="ca-intermediate" readonly rows="6"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal-overlay" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title"></h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container"></div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/dns.js"></script>
+  <script src="/js/tsig.js"></script>
+  <script src="/js/certs.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

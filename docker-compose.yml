@@ -1,0 +1,33 @@
+services:
+  core-management:
+    build: .
+    container_name: core-management
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - BIND9_HOST=10.255.0.30
+      - BIND9_PORT=5353
+      - BIND9_CONFIG_DIR=/bind9/config
+      - BIND9_DATA_DIR=/bind9/data
+      - BIND9_CONTAINER=bind9
+      - STEPCA_DATA_DIR=/stepca/data
+      - DOCKER_SOCKET=/var/run/docker.sock
+    volumes:
+      - /opt/bind9/config:/bind9/config
+      - /opt/bind9/data:/bind9/data
+      - /opt/stepca/data:/stepca/data:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      core_net:
+        ipv4_address: 10.255.0.60
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  core_net:
+    external: true

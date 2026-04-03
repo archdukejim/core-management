@@ -1,0 +1,20 @@
+{
+  "name": "core-management",
+  "version": "1.0.0",
+  "description": "Web management interface for BIND9 DNS, TSIG keys, and Step-CA certificates",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.15.3",
+    "typescript": "^5.8.3",
+    "ts-node": "^10.9.2"
+  }
+}
