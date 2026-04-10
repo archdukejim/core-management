@@ -1,6 +1,15 @@
+function handleAuthRedirect(res) {
+  if (res.status === 401) {
+    window.location.href = '/login';
+    return true;
+  }
+  return false;
+}
+
 const api = {
   async get(url) {
     const res = await fetch(url);
+    if (handleAuthRedirect(res)) return;
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.error || `Request failed: ${res.status}`);
@@ -14,6 +23,7 @@ const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+    if (handleAuthRedirect(res)) return;
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.error || `Request failed: ${res.status}`);
@@ -27,6 +37,7 @@ const api = {
       headers: { 'Content-Type': 'application/json' },
       body: data ? JSON.stringify(data) : undefined,
     });
+    if (handleAuthRedirect(res)) return;
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.error || `Request failed: ${res.status}`);

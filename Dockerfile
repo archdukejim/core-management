@@ -9,14 +9,11 @@ RUN npx tsc
 
 FROM node:22-bookworm-slim
 
-# Install step-cli for certificate minting and bind9-dnsutils for dig/nsupdate
+# Install bind9-dnsutils for dig/nsupdate (step-cli no longer needed — using Step-CA API)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
         bind9-dnsutils \
-    && curl -fsSL https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_amd64.deb -o /tmp/step-cli.deb \
-    && dpkg -i /tmp/step-cli.deb \
-    && rm /tmp/step-cli.deb \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

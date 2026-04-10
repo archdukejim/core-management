@@ -9,6 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Load user info (if OIDC is active)
+  api.get('/api/me').then(user => {
+    if (user && user.name) {
+      document.getElementById('user-display').textContent = user.name;
+      document.getElementById('logout-btn').hidden = false;
+    }
+  }).catch(() => {});
+
   // Initialize panels
   dns.init();
   tsigPanel.init();

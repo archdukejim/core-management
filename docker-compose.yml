@@ -7,13 +7,25 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
+      # BIND9
       - BIND9_HOST=10.255.0.30
       - BIND9_PORT=5353
       - BIND9_CONFIG_DIR=/bind9/config
       - BIND9_DATA_DIR=/bind9/data
       - BIND9_CONTAINER=bind9
+      # Step-CA
+      - STEPCA_API_URL=https://step-ca:9000
+      - STEPCA_PROVISIONER=admin
       - STEPCA_DATA_DIR=/stepca/data
+      # Docker
       - DOCKER_SOCKET=/var/run/docker.sock
+      # OIDC / Keycloak (set OIDC_ENABLED=false to disable)
+      - OIDC_ENABLED=${OIDC_ENABLED:-false}
+      - OIDC_ISSUER_BASE_URL=${OIDC_ISSUER_BASE_URL:-}
+      - OIDC_BASE_URL=${OIDC_BASE_URL:-http://localhost:3000}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-core-management}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
+      - OIDC_SESSION_SECRET=${OIDC_SESSION_SECRET:-}
     volumes:
       - /opt/bind9/config:/bind9/config
       - /opt/bind9/data:/bind9/data

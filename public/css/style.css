@@ -35,6 +35,15 @@ header {
   gap: 2rem;
 }
 
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
 header h1 {
   font-size: 1.2rem;
   font-weight: 600;

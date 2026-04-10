@@ -10,12 +10,23 @@ export const config = {
     containerName: process.env.BIND9_CONTAINER || 'bind9',
   },
   stepca: {
+    apiUrl: process.env.STEPCA_API_URL || 'https://step-ca:9000',
+    provisioner: process.env.STEPCA_PROVISIONER || 'admin',
     dataDir: process.env.STEPCA_DATA_DIR || '/stepca/data',
-    get certsDir() { return path.join(this.dataDir, 'certs'); },
-    get secretsDir() { return path.join(this.dataDir, 'secrets'); },
-    get templatesDir() { return path.join(this.dataDir, 'templates', 'certs'); },
+    get caConfigFile() { return path.join(this.dataDir, 'config', 'ca.json'); },
+    get passwordFile() { return path.join(this.dataDir, 'secrets', 'password'); },
+    get rootCertFile() { return path.join(this.dataDir, 'certs', 'root_ca.crt'); },
+    get intermediateCertFile() { return path.join(this.dataDir, 'certs', 'intermediate_ca.crt'); },
   },
   docker: {
     socketPath: process.env.DOCKER_SOCKET || '/var/run/docker.sock',
+  },
+  oidc: {
+    enabled: process.env.OIDC_ENABLED !== 'false',
+    issuerBaseUrl: process.env.OIDC_ISSUER_BASE_URL || '',
+    baseUrl: process.env.OIDC_BASE_URL || `http://localhost:${process.env.PORT || '3000'}`,
+    clientId: process.env.OIDC_CLIENT_ID || 'core-management',
+    clientSecret: process.env.OIDC_CLIENT_SECRET || '',
+    sessionSecret: process.env.OIDC_SESSION_SECRET || '',
   },
 };
