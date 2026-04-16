@@ -29,9 +29,32 @@ if (config.oidc.enabled && config.oidc.issuerBaseUrl) {
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // API routes
-app.use('/api/dns', dnsRoutes);
-app.use('/api/tsig', tsigRoutes);
-app.use('/api/certs', certsRoutes);
+if (config.isNonProductionMode) {
+  console.log('Running in NON-PRODUCTION MODE. Connectors are bypassed.');
+  const mockRouter = express.Router();
+  
+  // DNS mocks
+  mockRouter.get('/dns/zones', (_req, res) => { res.json([]); });
+  mockRouter.get('/dns/zones/:zone/records', (_req, res) => { res.json([]); });
+  mockRouter.post('/dns/zones/:zone/records', (_req, res) => { res.json({ ok: true }); });
+  mockRouter.delete('/dns/zones/:zone/records', (_req, res) => { res.json({ ok: true }); });
+
+  // TSIG mocks
+  mockRouter.get('/tsig/keys', (_req, res) => { res.json([]); });
+  mockRouter.get('/tsig/grants', (_req, res) => { res.json([]); });
+  mockRouter.post('/tsig/keys', (req, res) => { res.json({ name: req.body.name, secret: 'mock', algorithm: req.body.algorithm || 'hmac-sha256' }); });
+  mockRouter.delete('/tsig/keys/:name', (_req, res) => { res.json({ ok: true }); });
+
+  // Certs mocks
+  mockRouter.get('/certs/ca', (_req, res) => { res.json({ root: '', intermediate: '' }); });
+  mockRouter.post('/certs/mint', (_req, res) => { res.json({ crt: '', key: '', ca: '' }); });
+
+  app.use('/api', mockRouter);
+} else {
+  app.use('/api/dns', dnsRoutes);
+  app.use('/api/tsig', tsigRoutes);
+  app.use('/api/certs', certsRoutes);
+}
 
 // User info endpoint (available when OIDC is active)
 app.get('/api/me', (req: any, res) => {
@@ -52,11 +75,13 @@ app.get('*', (req, res) => {
 
 // Initialize services and start
 async function start() {
-  try {
-    await initStepCA();
-  } catch (err: any) {
-    console.error(`Step-CA initialization failed: ${err.message}`);
-    console.error('Certificate minting will not be available until Step-CA is reachable');
+  if (!config.isNonProductionMode) {
+    try {
+      await initStepCA();
+    } catch (err: any) {
+      console.error(`Step-CA initialization failed: ${err.message}`);
+      console.error('Certificate minting will not be available until Step-CA is reachable');
+    }
   }
 
   app.listen(config.port, '0.0.0.0', () => {
