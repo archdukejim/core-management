@@ -1,7 +1,7 @@
 import path from 'path';
 
 export const config = {
-  isNonProductionMode: process.env.NON_PRODUCTION_MODE === 'true',
+  isDevelopmentMode: process.env.DEVELOPMENT_MODE === 'true',
   port: parseInt(process.env.PORT || '3000', 10),
   bind9: {
     host: process.env.BIND9_HOST || '10.255.0.30',

@@ -29,8 +29,8 @@ if (config.oidc.enabled && config.oidc.issuerBaseUrl) {
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // API routes
-if (config.isNonProductionMode) {
-  console.log('Running in NON-PRODUCTION MODE. Connectors are bypassed.');
+if (config.isDevelopmentMode) {
+  console.log('Running in DEVELOPMENT MODE. Connectors are bypassed.');
   const mockRouter = express.Router();
   
   // DNS mocks
@@ -75,7 +75,7 @@ app.get('*', (req, res) => {
 
 // Initialize services and start
 async function start() {
-  if (!config.isNonProductionMode) {
+  if (!config.isDevelopmentMode) {
     try {
       await initStepCA();
     } catch (err: any) {
